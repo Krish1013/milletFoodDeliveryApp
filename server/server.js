@@ -25,9 +25,24 @@ app.use('/api/', limiter);
 
 // CORS
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
-        ? process.env.CLIENT_URL
-        : ['http://localhost:5173', 'http://localhost:3000'],
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'https://millet-food-delivery-app.vercel.app',
+            process.env.CLIENT_URL
+        ].filter(Boolean);
+
+        // Allow requests with no origin (mobile apps, Postman, server-to-server)
+        if (!origin) return callback(null, true);
+
+        // Allow exact match or any *.vercel.app preview deploy
+        if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+            return callback(null, true);
+        }
+
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 
