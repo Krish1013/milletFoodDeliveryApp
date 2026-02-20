@@ -23,27 +23,31 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS
+// CORS — production-safe configuration
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://millet-food-delivery-app.vercel.app',
+    process.env.CLIENT_URL?.replace(/\/+$/, '') // strip trailing slash
+].filter(Boolean);
+
 app.use(cors({
     origin: function (origin, callback) {
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'http://localhost:3000',
-            'https://millet-food-delivery-app.vercel.app',
-            process.env.CLIENT_URL
-        ].filter(Boolean);
-
-        // Allow requests with no origin (mobile apps, Postman, server-to-server)
+        // Allow requests with no origin (mobile apps, Postman, curl, server-to-server)
         if (!origin) return callback(null, true);
 
-        // Allow exact match or any *.vercel.app preview deploy
-        if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
-            return callback(null, true);
-        }
+        // Allow exact match
+        if (allowedOrigins.includes(origin)) return callback(null, true);
 
+        // Allow any *.vercel.app preview/branch deploy
+        if (/\.vercel\.app$/.test(origin)) return callback(null, true);
+
+        console.log('CORS blocked origin:', origin);
         callback(new Error('Not allowed by CORS'));
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Body parser — increase limit for audio data
